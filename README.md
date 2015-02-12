@@ -1,35 +1,29 @@
-qlint
-=====
-Sanity checker for PBS torque job files
+vsc-monitoring
+==============
+Cluster monitoring tools
 
-Problems signalled
-------------------
-Errors:
-  * Non-unix line endings
-  * Non-ASCII charactersa in PBS file
-  * Invalid values for join (-j)
-  * Invalid values for keep (-k)
-  * Invalid values for mail event (-m)
-  * Malformed job name (-N)
-  * Malformed project name (-A)
-  * Invalid walltime format (-l walltime=...)
-  * Non-numerical ppn, procs, or gpus specification
-  * Invalid memory and process memory specification
-  * Multpile procs resource specifications
-  * Memory resources not available for combination of nodes, ppn, and pmem
-  * Memory resources not available for combinatino of nodes and mem
-  * Unknown partition specified
-  * Unknown QOS specified
-  * Number of nodes requested too large in partition
-  * ppn too large
+Functionality
+-------------
+* `plot_cluster_load_map.py`: creates a heat map representing the load
+    of a cluster.  Each node is represented as a point, the color
+    indicating the load (blue: not all cores busy, grey: all cores busy,
+    red: cores oversubscribed), the size indicating the memory load
+    (the larger the symbol, the more memory used on the node), the
+    symbol indicates the node's state (circle: idle, square, single job,
+    diamond: multiple jobs, cross: down).
+* `plot_job_stats.py`: creates and updates a streaming plot of job
+    statistics, i.e., the number of running, idle, system hold, deferred,
+    batch hod, user hold, hold, and not queued jobs.
+* `plot_queue_distribution.py`: creates a bar chart representing the
+    number of running and queued jobs for each queue (q1h, q24h, q72h,
+    q7d, q21d), and the corresponding number of nodes.
 
-Warnings:
-  * Missing shebang
-  * Misplaced shebang
-  * Space in directive, i.e., '# PBS', rather than '#PBS'
-  * PBS directives after first script statement
-  * Missing script
-  * Invalid mail addresses (-M)
-  * Unknown resource specication (-l)
-  * Memory specification for pmem and mem not consistent
+Plots are created on plot.ly (http://plot.ly/)
+
+Dependencies
+------------
+* https://github.com/gjbex/vsc-tools-lib : it's lib directory
+    shuold be in the PYTHONPATH variable.
+* plotly Python package should be installed
+* Python version 2.7.x required
 
