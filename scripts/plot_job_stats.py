@@ -5,6 +5,8 @@ import datetime, sys
 
 import plotly.plotly as py
 from plotly.graph_objs import Stream, Scatter, Data, Layout, Figure
+from vsc.plotly_utils import sign_in
+
 
 # list of states to ensure right order in graph
 STATE_NAMES = [
@@ -16,18 +18,20 @@ STATE_NAMES = [
     'UserHold',
     'Hold',
     'NotQueued',
+    'Cancelling',
 ]
 
 # stream tokens so that each state goes to its own stream
 STREAM_IDS = {
-    'Running': 'c7d72lai12',
-    'Idle': 'v06nqwbyc8',
+    'Running':    'c7d72lai12',
+    'Idle':       'v06nqwbyc8',
     'SystemHold': 'wit8d3v54h',
-    'Deferred': 'p1kt433uui',
-    'BatchHold': 'vjb6ixgg0p',
-    'UserHold': 'w351mpb9jk',
-    'Hold': '9txpv9ickx',
-    'NotQueued': 'bqn4umpi72',
+    'Deferred':   'p1kt433uui',
+    'BatchHold':  'vjb6ixgg0p',
+    'UserHold':   'w351mpb9jk',
+    'Hold':       '9txpv9ickx',
+    'NotQueued':  'bqn4umpi72',
+    'Cancelling': 'm7cw6k570a',
 }
 
 def count_job_types(jobs, regex):
@@ -99,10 +103,13 @@ if __name__ == '__main__':
                             help='name of cluster')
     arg_parser.add_argument('--pattern', default=r'2\d+',
                             help='pattern used to filter job IDs')
+    arg_parser.add_argument('--conf', default='~/.plotly/plotly.conf',
+                            help='configuration file to use')
     arg_parser.add_argument('--file', help='showq output file (debuggign)')
     arg_parser.add_argument('--showq', default='/opt/moab/bin/showq',
                             help='showq command to use')
     options = arg_parser.parse_args()
+    sign_in(options.conf)
 # check consistency of state name list and stream IDs, if inconsisten
 # try to continue nevertheless
     if set(STATE_NAMES) != set(STREAM_IDS.keys()):
@@ -126,4 +133,3 @@ if __name__ == '__main__':
         print 'URL = {0}'.format(url)
     else:
         update_plot(counters, options)
-
