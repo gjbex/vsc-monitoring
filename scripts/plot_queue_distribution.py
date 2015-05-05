@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 import json, sys
-from vsc.plotly_utils import create_annotations
+from vsc.plotly_utils import create_annotations, sign_in
+
 
 import plotly.plotly as py
 from plotly.graph_objs import Bar, Data, Layout, Figure
@@ -109,6 +110,8 @@ if __name__ == '__main__':
                             help='qstat command to use')
     arg_parser.add_argument('--qstat_options', default='-f',
                             help='qstat command options to use')
+    arg_parser.add_argument('--conf', default='~/.plotly/plotly.conf',
+                            help='configuration file to use')
     arg_parser.add_argument('--verbose', action='store_true',
                             help='print some feedback information')
     arg_parser.add_argument('--queues',
@@ -118,13 +121,14 @@ if __name__ == '__main__':
                                  ' list of name:time (h)')
     arg_parser.add_argument('--file', help='file to use as input for'
                                            ' debugging')
-    arg_parser.add_argument('--conf', default='config.json',
+    arg_parser.add_argument('--cluster_conf', default='config.json',
                             help='JSON configuration file')
     options = arg_parser.parse_args()
+    sign_in(options.conf)
 
 # open configuration file and parse it
     try:
-        with open(options.conf, 'r') as conf_file:
+        with open(options.cluster_conf, 'r') as conf_file:
             config = json.load(conf_file)
     except EnvironmentError as error:
         msg = "### error: can not open configuration file '{0}'\n"
