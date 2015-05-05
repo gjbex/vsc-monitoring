@@ -159,6 +159,8 @@ def compute_xy_labels(options):
 if __name__ == '__main__':
     from argparse import ArgumentParser
     import subprocess, sys
+    import urllib3
+    urllib3.disable_warnings()
 
     arg_parser = ArgumentParser(description='Create a heatmap of CPU load')
     arg_parser.add_argument('--partition', default='thinking',
