@@ -165,7 +165,7 @@ if __name__ == '__main__':
     arg_parser = ArgumentParser(description='Create a heatmap of CPU load')
     arg_parser.add_argument('--partition', default='thinking',
                             help='cluster partition to visualize')
-    arg_parser.add_argument('--enclosures', default='r1i0,r1i1,r1i2,r2i0,r2i1,r2i2,r3i0,r3i1,r3i2,r4i0,r4i1,r4i2,r5i0,r5i1,r5i2,r8i0',
+    arg_parser.add_argument('--enclosures', default='r1i0,r1i1,r1i2,r2i0,r2i1,r2i2,r3i0,r3i1,r3i2,r4i0,r4i1,r5i0,r5i1,r4i2,r5i2,r8i0',
                             help='list of enclosures')
     arg_parser.add_argument('--nr_nodes', type=int, default=16,
                             help='number of nodes per IRU')
