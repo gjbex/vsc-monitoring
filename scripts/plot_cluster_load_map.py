@@ -3,7 +3,7 @@
 import plotly.plotly as py
 from plotly.graph_objs import Data, Layout, Figure, Scatter, Marker
 from vsc.pbs.pbsnodes import PbsnodesParser
-from vsc.plotly_utils import create_annotations
+from vsc.plotly_utils import create_annotations, sign_in
 
 def compute_coordinates(x, y, options):
     x_coords = []
@@ -107,6 +107,9 @@ def create_plot(names, cpu, mem, status, jobs, x, y, options):
         annotations=create_annotations(),
         xaxis={'autotick': False},
         yaxis={'autotick': False},
+        width=950,
+        height=800,
+        hovermode='closest',
     )
     figure = Figure(data=data, layout=layout)
     filename = '{0}_cpu_load'.format(options.partition)
@@ -160,7 +163,7 @@ if __name__ == '__main__':
     arg_parser = ArgumentParser(description='Create a heatmap of CPU load')
     arg_parser.add_argument('--partition', default='thinking',
                             help='cluster partition to visualize')
-    arg_parser.add_argument('--enclosures', default='r1i0,r1i1,r1i2,r2i0,r2i1,r2i2,r3i0,r3i1,r3i2,r4i0,r4i1,r5i0,r5i1',
+    arg_parser.add_argument('--enclosures', default='r1i0,r1i1,r1i2,r2i0,r2i1,r2i2,r3i0,r3i1,r3i2,r4i0,r4i1,r4i2,r5i0,r5i1,r5i2,r8i0',
                             help='list of enclosures')
     arg_parser.add_argument('--nr_nodes', type=int, default=16,
                             help='number of nodes per IRU')
@@ -168,12 +171,15 @@ if __name__ == '__main__':
                             help='node offset')
     arg_parser.add_argument('--pbsnodes', default='/usr/local/bin/pbsnodes',
                             help='pbsnodes command to use')
+    arg_parser.add_argument('--conf', default='~/.plotly/plotly.conf',
+                            help='configuration file to use')
     arg_parser.add_argument('--verbose', action='store_true',
                             help='verbose output')
     arg_parser.add_argument('--dryrun', action='store_true',
                             help='do not create plot')
     arg_parser.add_argument('--file', help='file with pbsnodes output')
     options = arg_parser.parse_args()
+    sign_in(options.conf)
     parser = PbsnodesParser()
     if options.file:
         with open(options.file, 'r') as pbs_file:
