@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 '''script that sends the number of jobs by state to Plotly'''
 
-import datetime, sys
+import datetime
+import sys
 
 import plotly.plotly as py
 from plotly.graph_objs import Stream, Scatter, Data, Layout, Figure
 from vsc.plotly_utils import sign_in
-
 
 # list of states to ensure right order in graph
 STATE_NAMES = [
@@ -18,7 +18,7 @@ STATE_NAMES = [
     'UserHold',
     'Hold',
     'NotQueued',
-    'Cancelling',
+    'Canceling',
 ]
 
 # stream tokens so that each state goes to its own stream
@@ -31,8 +31,9 @@ STREAM_IDS = {
     'UserHold':   'w351mpb9jk',
     'Hold':       '9txpv9ickx',
     'NotQueued':  'bqn4umpi72',
-    'Cancelling': 'm7cw6k570a',
+    'Canceling': 'm7cw6k570a',
 }
+
 
 def count_job_types(jobs, regex):
     '''create a map from job state to number of jobs based on a list
@@ -49,6 +50,7 @@ def count_job_types(jobs, regex):
                     msg = '### unknown job state: {0}\n'.format(job.state)
                     sys.stderr.write(msg)
     return counters
+
 
 def init_plot(counters, options):
     '''initialize Plotly plot based on counters, should be executed only,
@@ -76,6 +78,7 @@ def init_plot(counters, options):
                   auto_open=False)
     return url
 
+
 def update_plot(counters, options):
     '''update the plot with current counter values'''
     time_stamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -91,9 +94,11 @@ def update_plot(counters, options):
         stream.write(dict(x=x, y=y))
         stream.close()
 
+
 if __name__ == '__main__':
     from argparse import ArgumentParser
-    import re, subprocess
+    import re
+    import subprocess
     from vsc.moab.showq import ShowqParser
 
     arg_parser = ArgumentParser(description='create or update job stats')
