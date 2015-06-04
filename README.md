@@ -23,7 +23,7 @@ Plots are created on plot.ly (http://plot.ly/)
 Dependencies
 ------------
 * https://github.com/gjbex/vsc-tools-lib : its `lib` directory
-    shuold be in the `PYTHONPATH` variable.
+    should be in the `PYTHONPATH` variable.
 * plotly Python package should be installed
 * Python version 2.7.x required
 
