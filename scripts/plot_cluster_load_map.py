@@ -5,6 +5,7 @@ from plotly.graph_objs import Data, Layout, Figure, Scatter, Marker
 from vsc.pbs.pbsnodes import PbsnodesParser
 from vsc.plotly_utils import create_annotations, sign_in
 
+
 def compute_coordinates(x, y, options):
     x_coords = []
     y_coords = []
@@ -13,6 +14,7 @@ def compute_coordinates(x, y, options):
             x_coords.append(i)
             y_coords.append(j)
     return x_coords, y_coords
+
 
 def compute_cpu_colors(cpu, options):
     nr_blues = 7
@@ -45,6 +47,7 @@ def compute_cpu_colors(cpu, options):
             colors.append(color_map[idx])
     return colors
 
+
 def compute_mem_sizes(mem, options):
     sizes = []
     down_size = 10
@@ -55,6 +58,7 @@ def compute_mem_sizes(mem, options):
             size = 15 + 20*mem_value
             sizes.append(size)
     return sizes
+
 
 def compute_status_symbols(status, options):
     symbol_map = {
@@ -71,6 +75,7 @@ def compute_status_symbols(status, options):
             symbols.append(symbol_map[state])
     return symbols
 
+
 def compute_texts(names, cpu, mem, status, jobs):
     texts = []
     for idx in xrange(len(names)):
@@ -85,8 +90,24 @@ def compute_texts(names, cpu, mem, status, jobs):
         texts.append(text_str)
     return texts
 
-def create_plot(names, cpu, mem, status, jobs, x, y, options):
-    x_coords, y_coords = compute_coordinates(x, y, options)
+
+def collect_coordinates(names, node_map):
+    x_coords = []
+    y_coords = []
+    for name in names:
+        x = int(node_map['nodes'][name][0])
+        y = int(node_map['nodes'][name][1])
+        x_coords.append(x)
+        y_coords.append(y)
+    return x_coords, y_coords
+
+
+def create_plot(names, cpu, mem, status, jobs, x, y, options,
+                node_map=None):
+    if node_map:
+        x_coords, y_coords = collect_coordinates(names, node_map)
+    else:
+        x_coords, y_coords = compute_coordinates(x, y, options)
     cpu_colors = compute_cpu_colors(cpu, options)
     mem_sizes = compute_mem_sizes(mem, options)
     status_symbols = compute_status_symbols(status, options)
@@ -119,18 +140,20 @@ def create_plot(names, cpu, mem, status, jobs, x, y, options):
         url = py.plot(figure, filename=filename, auto_open=False)
         return url
 
-def compute_maps(nodes, options):
+
+def compute_maps(nodes, names):
     cpu = []
     mem = []
-    for node in (n for n in nodes if n.has_property(options.partition)):
+    for node in (n for n in nodes if n.hostname in names):
         cpu.append(node.cpuload if node.cpuload is not None else -1.0)
         mem.append(node.memload if node.memload is not None else -1.0)
     return cpu, mem
 
-def compute_job_status(nodes, options):
+
+def compute_job_status(nodes, names):
     jobs = []
     status = []
-    for node in (n for n in nodes if n.has_property(options.partition)):
+    for node in (n for n in nodes if n.hostname in names):
         if node.status:
             if node.job_ids:
                 jobs.append(node.job_ids)
@@ -149,6 +172,7 @@ def compute_job_status(nodes, options):
             status.append('down')
     return jobs, status
 
+
 def compute_xy_labels(options):
     n_min = options.node_offset
     n_max = n_min + options.nr_nodes
@@ -158,7 +182,9 @@ def compute_xy_labels(options):
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
-    import subprocess, sys
+    import json
+    import subprocess
+    import sys
 
     arg_parser = ArgumentParser(description='Create a heatmap of CPU load')
     arg_parser.add_argument('--partition', default='thinking',
@@ -173,6 +199,7 @@ if __name__ == '__main__':
                             help='pbsnodes command to use')
     arg_parser.add_argument('--conf', default='~/.plotly/plotly.conf',
                             help='configuration file to use')
+    arg_parser.add_argument('--node_map', help='node map file to use')
     arg_parser.add_argument('--verbose', action='store_true',
                             help='verbose output')
     arg_parser.add_argument('--dryrun', action='store_true',
@@ -180,6 +207,11 @@ if __name__ == '__main__':
     arg_parser.add_argument('--file', help='file with pbsnodes output')
     options = arg_parser.parse_args()
     sign_in(options.conf)
+    if options.node_map:
+        with open(options.node_map, 'r') as node_map_file:
+            node_map = json.load(node_map_file)
+    else:
+        node_map = None
     parser = PbsnodesParser()
     if options.file:
         with open(options.file, 'r') as pbs_file:
@@ -193,18 +225,24 @@ if __name__ == '__main__':
             sys.exit(1)
     if options.verbose:
         print '{0:d} nodes found'.format(len(nodes))
-    x_labels, y_labels = compute_xy_labels(options)
+    if options.node_map:
+        x_labels = node_map['x_labels']
+        y_labels = node_map['y_labels']
+    else:
+        x_labels, y_labels = compute_xy_labels(options)
     if options.verbose:
         print '{0:d} x-labels, {1:d} y-labels'.format(len(x_labels),
                                                       len(y_labels))
-    names = [node.hostname for node in nodes
-                 if node.has_property(options.partition)]
+    if options.node_map:
+        names = node_map['nodes'].keys()
+    else:
+        names = [node.hostname for node in nodes
+                     if node.has_property(options.partition)]
     if options.verbose:
         print 'names:'
         print '\n'.join(names)
-    cpu, mem = compute_maps(nodes, options)
-    jobs, status = compute_job_status(nodes, options)
+    cpu, mem = compute_maps(nodes, names)
+    jobs, status = compute_job_status(nodes, names)
     url = create_plot(names, cpu, mem, status, jobs,
-                      x_labels, y_labels, options)
+                      x_labels, y_labels, options, node_map)
     print 'URL: {0}'.format(url)
-
