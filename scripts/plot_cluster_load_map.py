@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import subprocess
 import plotly.plotly as py
 from plotly.graph_objs import Data, Layout, Figure, Scatter, Marker
 from vsc.pbs.pbsnodes import PbsnodesParser
@@ -193,37 +194,22 @@ def compute_xy_labels(node_offset, nr_nodes, enclosures):
     return x_labels, y_labels
 
 
-def create_map(pbsnodes, partition='thinking', node_map=None):
-    if node_map:
-        with open(node_map, 'r') as node_map_file:
-            node_map = json.load(node_map_file)
-    else:
-        node_map = None
+def create_map(pbsnodes, node_map, partition='thinking'):
     parser = PbsnodesParser()
     node_output = subprocess.check_output([pbsnodes])
     nodes = parser.parse(node_output)
-    if node_map:
-        x_labels = node_map['x_labels']
-        y_labels = node_map['y_labels']
-    else:
-        x_labels, y_labels = compute_xy_labels(options.node_offset,
-                                               options.nr_nodes,
-                                               options.enclosures)
-    if node_map:
-        names = node_map['nodes'].keys()
-    else:
-        names = [node.hostname for node in nodes
-                 if node.has_property(options.partition)]
+    x_labels = node_map['x_labels']
+    y_labels = node_map['y_labels']
+    names = node_map['nodes'].keys()
     cpu, mem = compute_maps(nodes, names)
     jobs, status = compute_job_status(nodes, names)
-    return create_plot(names, cpu, mem, status, jobs,
-                       x_labels, y_labels, partition, node_map)
+    return create_figure(names, cpu, mem, status, jobs,
+                         x_labels, y_labels, partition, node_map)
 
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
     import json
-    import subprocess
     import sys
 
     arg_parser = ArgumentParser(description='Create a heatmap of CPU load')
