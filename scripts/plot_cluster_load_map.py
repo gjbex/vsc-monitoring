@@ -6,7 +6,11 @@ from vsc.pbs.pbsnodes import PbsnodesParser
 from vsc.plotly_utils import create_annotations, sign_in
 
 
-def compute_coordinates(x, y, options):
+DEFAULT_ENCLOSURES = ('r1i0,r1i1,r1i2,r2i0,r2i1,r2i2,r3i0,r3i1,'
+                      'r3i2,r4i0,r4i1,r5i0,r5i1,r4i2,r5i2,r8i0')
+
+
+def compute_coordinates(x, y):
     x_coords = []
     y_coords = []
     for j in xrange(1, 1 + len(y)):
@@ -16,7 +20,7 @@ def compute_coordinates(x, y, options):
     return x_coords, y_coords
 
 
-def compute_cpu_colors(cpu, options):
+def compute_cpu_colors(cpu):
     nr_blues = 7
     color_map = [
         'rgb(37,0,250)',
@@ -25,7 +29,7 @@ def compute_cpu_colors(cpu, options):
         'rgb(107,85,250)',
         'rgb(138,119,250)',
         'rgb(164,150,250)',
-        'rgb(200,200,200)', # grey
+        'rgb(200,200,200)',  # grey
         'rgb(250,177,177)',
         'rgb(250,93,93)',
         'rgb(250,0,0)',
@@ -48,7 +52,7 @@ def compute_cpu_colors(cpu, options):
     return colors
 
 
-def compute_mem_sizes(mem, options):
+def compute_mem_sizes(mem):
     sizes = []
     down_size = 10
     for mem_value in mem:
@@ -60,7 +64,7 @@ def compute_mem_sizes(mem, options):
     return sizes
 
 
-def compute_status_symbols(status, options):
+def compute_status_symbols(status):
     symbol_map = {
         'free': 'circle',
         'down': 'cross',
@@ -80,7 +84,8 @@ def compute_texts(names, cpu, mem, status, jobs):
     texts = []
     for idx in xrange(len(names)):
         text_str = '<b>{0}</b>'.format(names[idx])
-        if not (status[idx].startswith('down') or status[idx].startswith('offline')):
+        if not (status[idx].startswith('down') or
+                status[idx].startswith('offline')):
             text_str += '<br>CPU: {0:.2f}'.format(cpu[idx])
             text_str += '<br>MEM: {0:.2f}'.format(mem[idx])
             if status[idx] != 'free':
@@ -102,15 +107,15 @@ def collect_coordinates(names, node_map):
     return x_coords, y_coords
 
 
-def create_plot(names, cpu, mem, status, jobs, x, y, options,
-                node_map=None):
+def create_figure(names, cpu, mem, status, jobs, x, y,
+                  partition='thinking', node_map=None):
     if node_map:
         x_coords, y_coords = collect_coordinates(names, node_map)
     else:
-        x_coords, y_coords = compute_coordinates(x, y, options)
-    cpu_colors = compute_cpu_colors(cpu, options)
-    mem_sizes = compute_mem_sizes(mem, options)
-    status_symbols = compute_status_symbols(status, options)
+        x_coords, y_coords = compute_coordinates(x, y)
+    cpu_colors = compute_cpu_colors(cpu)
+    mem_sizes = compute_mem_sizes(mem)
+    status_symbols = compute_status_symbols(status)
     texts = compute_texts(names, cpu, mem, status, jobs)
     trace = Scatter(
         x=x_coords, y=y_coords, mode='markers',
@@ -123,7 +128,7 @@ def create_plot(names, cpu, mem, status, jobs, x, y, options,
     )
     data = Data([trace])
     layout = Layout(
-        title='{0} load'.format(options.partition),
+        title='{0} load'.format(partition),
         showlegend=False,
         annotations=create_annotations(),
         xaxis={'autotick': False},
@@ -132,7 +137,13 @@ def create_plot(names, cpu, mem, status, jobs, x, y, options,
         height=800,
         hovermode='closest',
     )
-    figure = Figure(data=data, layout=layout)
+    return Figure(data=data, layout=layout)
+
+
+def create_plot(names, cpu, mem, status, jobs, x, y, options,
+                node_map=None):
+    figure = create_figure(names, cpu, mem, status, jobs, x, y,
+                           options.partition, node_map)
     filename = '{0}_cpu_load'.format(options.partition)
     if options.dryrun:
         return 'dryrun'
@@ -161,7 +172,8 @@ def compute_job_status(nodes, names):
                     status.append('multijob')
                 else:
                     status.append('singlejob')
-            elif node.state.startswith('down') or node.state.startswith('offline'):
+            elif (node.state.startswith('down') or
+                  node.state.startswith('offline')):
                 jobs.append([])
                 status.append('down')
             else:
@@ -173,12 +185,40 @@ def compute_job_status(nodes, names):
     return jobs, status
 
 
-def compute_xy_labels(options):
-    n_min = options.node_offset
-    n_max = n_min + options.nr_nodes
+def compute_xy_labels(node_offset, nr_nodes, enclosures):
+    n_min = node_offset
+    n_max = n_min + nr_nodes
     x_labels = ['n{0:02d}'.format(i) for i in range(n_min, n_max)]
-    y_labels = options.enclosures.split(',')
+    y_labels = enclosures.split(',')
     return x_labels, y_labels
+
+
+def create_map(pbsnodes, partition='thinking', node_map=None):
+    if node_map:
+        with open(node_map, 'r') as node_map_file:
+            node_map = json.load(node_map_file)
+    else:
+        node_map = None
+    parser = PbsnodesParser()
+    node_output = subprocess.check_output([pbsnodes])
+    nodes = parser.parse(node_output)
+    if node_map:
+        x_labels = node_map['x_labels']
+        y_labels = node_map['y_labels']
+    else:
+        x_labels, y_labels = compute_xy_labels(options.node_offset,
+                                               options.nr_nodes,
+                                               options.enclosures)
+    if node_map:
+        names = node_map['nodes'].keys()
+    else:
+        names = [node.hostname for node in nodes
+                 if node.has_property(options.partition)]
+    cpu, mem = compute_maps(nodes, names)
+    jobs, status = compute_job_status(nodes, names)
+    return create_plot(names, cpu, mem, status, jobs,
+                       x_labels, y_labels, partition, node_map)
+
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
@@ -189,7 +229,10 @@ if __name__ == '__main__':
     arg_parser = ArgumentParser(description='Create a heatmap of CPU load')
     arg_parser.add_argument('--partition', default='thinking',
                             help='cluster partition to visualize')
-    arg_parser.add_argument('--enclosures', default='r1i0,r1i1,r1i2,r2i0,r2i1,r2i2,r3i0,r3i1,r3i2,r4i0,r4i1,r5i0,r5i1,r4i2,r5i2,r8i0',
+    arg_parser.add_argument('--enclosures', default='r1i0,r1i1,r1i2,r2i0,'
+                                                    'r2i1,r2i2,r3i0,r3i1,'
+                                                    'r3i2,r4i0,r4i1,r5i0,'
+                                                    'r5i1,r4i2,r5i2,r8i0',
                             help='list of enclosures')
     arg_parser.add_argument('--nr_nodes', type=int, default=16,
                             help='number of nodes per IRU')
@@ -229,7 +272,9 @@ if __name__ == '__main__':
         x_labels = node_map['x_labels']
         y_labels = node_map['y_labels']
     else:
-        x_labels, y_labels = compute_xy_labels(options)
+        x_labels, y_labels = compute_xy_labels(options.node_offset,
+                                               options.nr_nodes,
+                                               options.enclosures)
     if options.verbose:
         print '{0:d} x-labels, {1:d} y-labels'.format(len(x_labels),
                                                       len(y_labels))
@@ -237,7 +282,7 @@ if __name__ == '__main__':
         names = node_map['nodes'].keys()
     else:
         names = [node.hostname for node in nodes
-                     if node.has_property(options.partition)]
+                 if node.has_property(options.partition)]
     if options.verbose:
         print 'names:'
         print '\n'.join(names)
