@@ -66,5 +66,5 @@ if __name__ == '__main__':
     for name, x, y in zip(names, x_coords, y_coords):
         nodes[name] = [x, y]
     nodemap = {'x_labels': x_labels, 'y_labels': y_labels, 'nodes': nodes}
-    with open(options.json, 'w') as json_file:
+    with open(options.node_map, 'w') as json_file:
         json.dump(nodemap, json_file, indent=4)
