@@ -7,15 +7,15 @@
         "r2i1", 
         "r2i2", 
         "r3i0", 
-        "r3i1", 
-        "r3i2", 
+        "r3i1 [128 GB]", 
+        "r3i2 [128 GB]", 
         "r4i0", 
         "r4i1", 
+        "r4i2 [haswell]", 
         "r5i0", 
         "r5i1", 
-        "r4i2", 
-        "r5i2", 
-        "r8i0"
+        "r5i2 [haswell]", 
+        "r8i0 [haswell]"
     ], 
     "nodes": {
         "r3i1n8": [
