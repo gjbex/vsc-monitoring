@@ -38,9 +38,11 @@ def plot_queues(running_jobs, running_nodes, queued_jobs, queued_nodes,
         annotations=create_annotations()
     )
     figure = Figure(data=data, layout=layout)
-    url = py.plot(figure, filename='{0}_queues'.format(options.partition),
-                  auto_open=False)
-    return url
+    return py.plot(
+        figure,
+        filename='{0}_queues'.format(options.partition),
+        auto_open=False,
+    )
 
 def compute_queues(options):
     queues = []
@@ -65,33 +67,30 @@ def count_jobs(jobs, queues, limits, partition):
     for job in jobs:
         if job.partition != partition:
             continue
-        if job.state == 'R':
-            if 'walltime' in job.resource_specs:
-                walltime = job.resource_specs['walltime']
-                for idx, limit in enumerate(limits):
-                    if walltime <= limit:
-                        for node in job.exec_host.keys():
-                            running_nodes[queues[idx]].add(node)
-                        running_jobs[queues[idx]] += 1
-                        break
-            else:
-                msg = '# warning: job {0} has no walltime\n'.format(job.job_id)
-                sys.stderr.write(msg)
+        if job.state == 'R' and 'walltime' in job.resource_specs:
+            walltime = job.resource_specs['walltime']
+            for idx, limit in enumerate(limits):
+                if walltime <= limit:
+                    for node in job.exec_host.keys():
+                        running_nodes[queues[idx]].add(node)
+                    running_jobs[queues[idx]] += 1
+                    break
+        elif (
+            job.state == 'R'
+            or job.state == 'Q'
+            and 'walltime' not in job.resource_specs
+        ):
+            msg = '# warning: job {0} has no walltime\n'.format(job.job_id)
+            sys.stderr.write(msg)
         elif job.state == 'Q':
-            if 'walltime' in job.resource_specs:
-                walltime = job.resource_specs['walltime']
-                for idx, limit in enumerate(limits):
-                    if walltime <= limit:
-                        nodect = job.resource_specs['nodect']
-                        queued_nr_nodes[queues[idx]] += nodect
-                        queued_jobs[queues[idx]] += 1
-                        break
-            else:
-                msg = '# warning: job {0} has no walltime\n'.format(job.job_id)
-                sys.stderr.write(msg)
-    running_nr_nodes = {}
-    for queue in queues:
-        running_nr_nodes[queue] = len(running_nodes[queue])
+            walltime = job.resource_specs['walltime']
+            for idx, limit in enumerate(limits):
+                if walltime <= limit:
+                    nodect = job.resource_specs['nodect']
+                    queued_nr_nodes[queues[idx]] += nodect
+                    queued_jobs[queues[idx]] += 1
+                    break
+    running_nr_nodes = {queue: len(running_nodes[queue]) for queue in queues}
     return running_jobs, running_nr_nodes, queued_jobs, queued_nr_nodes
 
 if __name__ == '__main__':

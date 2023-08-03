@@ -38,9 +38,7 @@ STREAM_IDS = {
 def count_job_types(jobs, regex):
     '''create a map from job state to number of jobs based on a list
        of jbos'''
-    counters = {}
-    for state in STREAM_IDS:
-        counters[state] = 0
+    counters = {state: 0 for state in STREAM_IDS}
     for job_list in jobs.values():
         for job in job_list:
             if regex.match(job.id):
@@ -74,9 +72,9 @@ def init_plot(counters, options):
     data = Data(traces)
     layout = Layout(title='Jobs on {0}'.format(options.cluster))
     figure = Figure(data=data, layout=layout)
-    url = py.plot(figure, filename='{0}_jobs'.format(options.cluster),
-                  auto_open=False)
-    return url
+    return py.plot(
+        figure, filename='{0}_jobs'.format(options.cluster), auto_open=False
+    )
 
 
 def update_plot(counters, options):
