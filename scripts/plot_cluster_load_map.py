@@ -133,12 +133,10 @@ def create_plot(names, cpu, mem, status, jobs, x, y, options,
         hovermode='closest',
     )
     figure = Figure(data=data, layout=layout)
-    filename = '{0}_cpu_load'.format(options.partition)
     if options.dryrun:
         return 'dryrun'
-    else:
-        url = py.plot(figure, filename=filename, auto_open=False)
-        return url
+    filename = '{0}_cpu_load'.format(options.partition)
+    return py.plot(figure, filename=filename, auto_open=False)
 
 
 def compute_maps(nodes, names):
